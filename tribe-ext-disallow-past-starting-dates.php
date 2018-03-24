@@ -211,53 +211,5 @@ if (
 			}
 		}
 
-		public function protect_against_manually_entered_past_dates( $post_id, $post ) {
-			$chosen_start_date = $_POST['EventStartDate'];
-			if (
-				empty( $chosen_start_date )
-				|| ! is_string( $chosen_start_date )
-			) {
-				return;
-			}
-
-			$datepicker_format = Tribe__Date_Utils::datepicker_formats( tribe_get_option( 'datepickerFormat' ) );
-			$timezone = Tribe__Events__Timezones::get_event_timezone_string( $post_id );
-
-			// PHP does not support as many timezones as TEC/WP
-			if ( ! in_array( $timezone, timezone_identifiers_list() ) ) {
-				$timezone = '';
-			}
-
-			$chosen_datetime = DateTime::createFromFormat($datepicker_format, $chosen_start_date);
-
-			if ( $timezone ) {
-				$datetime_timezone = new DateTimeZone($timezone );
-				$chosen_datetime->setTimezone( $datetime_timezone );
-			}
-
-			$chosen_datetime->add(new DateInterval('PT23H59S'));
-
-			$chosen_timestamp = $chosen_datetime->getTimestamp();
-
-			if ( $this->get_min_allowed_start_date( $post_id ) > $chosen_timestamp ) {
-				$fixed_start_date = date( $datepicker_format );
-
-				// Unhook to avoid infinite loop
-				remove_action( 'save_post_' . Tribe__Events__Main::POSTTYPE, array( $this, 'protect_against_manually_entered_past_dates' ), 50, 2 );
-
-				// Do what we need to do
-				// Tribe__Events__API::things...
-
-				// The re-add the hook
-				add_action( 'save_post_' . Tribe__Events__Main::POSTTYPE, array( $this, 'protect_against_manually_entered_past_dates' ), 50, 2 );
-
-
-			}
-
-			// watch out for end time then being BEFORE start time
-
-			$x = 1;
-		}
-
 	} // end class
 } // end if class_exists check
