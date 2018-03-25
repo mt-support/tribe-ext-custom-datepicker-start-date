@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       The Events Calendar Extension: Disallow Past Starting Dates
- * Description:       Disallow selecting a past starting date for an event's start date datepicker in the wp-admin event edit screen and the Community Events form (if installed).
+ * Description:       Disallows non-Administrator users from selecting an event start date in the past. Works for new and existing events. Applies to the wp-admin event edit screen and the Community Events form (if installed).
  * Version:           1.0.0
  * Extension Class:   Tribe__Extension__Disallow_Past_Start_Dates
  * GitHub Plugin URI: https://github.com/mt-support/tribe-ext-disallow-past-starting-dates
