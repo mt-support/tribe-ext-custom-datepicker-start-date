@@ -1,4 +1,4 @@
-=== The Events Calendar Extension: Disallow Past Starting Dates ===
+=== The Events Calendar Extension: Custom Datepicker Start Date ===
 Contributors: ModernTribe
 Donate link: http://m.tri.be/29
 Tags: events, calendar
@@ -9,15 +9,17 @@ Stable tag: 1.0.0
 License: GPL version 3 or any later version
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Disallows non-Administrator users from selecting an event start date in the past. Works for new and existing events. Applies to the wp-admin event edit screen and the Community Events form (if installed).
+Restrict the event start date for non-Administrator users. Disallows setting a start date in the past by default. Filters exist for customizing to something else and for setting a maxDate. Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
 
 == Description ==
 
-Disallows non-Administrator users from selecting an event start date in the past.
+Restrict the event start date for non-Administrator users.
 
-Works for new and existing events.
+Disallows setting a start date in the past by default.
 
-Applies to the wp-admin event edit screen and the Community Events form (if installed).
+Filters exist for customizing to something else and for setting a maxDate.
+
+Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
 
 == Installation ==
 

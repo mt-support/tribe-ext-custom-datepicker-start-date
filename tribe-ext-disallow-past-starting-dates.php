@@ -1,15 +1,15 @@
 <?php
 /**
- * Plugin Name:       The Events Calendar Extension: Disallow Past Starting Dates
- * Description:       Disallows non-Administrator users from selecting an event start date in the past. Works for new and existing events. Applies to the wp-admin event edit screen and the Community Events form (if installed).
+ * Plugin Name:       The Events Calendar Extension: Custom Datepicker Start Date
+ * Description:       Restrict the event start date for non-Administrator users. Disallows setting a start date in the past by default. Filters exist for customizing to something else and for setting a maxDate. Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
  * Version:           1.0.0
- * Extension Class:   Tribe__Extension__Disallow_Past_Start_Dates
- * GitHub Plugin URI: https://github.com/mt-support/tribe-ext-disallow-past-starting-dates
+ * Extension Class:   Tribe__Extension__Custom_Datepicker_Start_Date
+ * GitHub Plugin URI: https://github.com/mt-support/tribe-ext-custom-datepicker-start-date
  * Author:            Modern Tribe, Inc.
  * Author URI:        http://m.tri.be/1971
  * License:           GPL version 3 or any later version
  * License URI:       https://www.gnu.org/licenses/gpl-3.0.html
- * Text Domain:       tribe-ext-disallow-past-starting-dates
+ * Text Domain:       tribe-ext-custom-datepicker-start-date
  *
  *     This plugin is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -23,7 +23,8 @@
  */
 
 /**
- * Known issue:
+ * Known issues:
+ * 1)
  * If the user's local time zone and the site's time zone are on different
  * calendar days (such as UTC+0 and UTC+1 and UTC is at 23:00:00), the
  * datepicker will display the user's today as selectable but it won't be
@@ -32,18 +33,22 @@
  *
  * This odd UX is due to the jQuery UI Datepicker library not supporting
  * time zones and the timepicker being a separate input.
+ *
+ * 2)
+ * All "protection" against setting an invalid start date is in JavaScript--none
+ * in PHP.
  */
 
 // Do not load unless Tribe Common is fully loaded and our class does not yet exist.
-if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Disallow_Past_Start_Dates' ) ) {
+if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Custom_Datepicker_Start_Date' ) ) {
 	/**
 	 * Extension main class, class begins loading on init() function.
 	 */
-	class Tribe__Extension__Disallow_Past_Start_Dates extends Tribe__Extension {
+	class Tribe__Extension__Custom_Datepicker_Start_Date extends Tribe__Extension {
 		/**
 		 * The script's handle.
 		 */
-		private $handle = 'tribe-ext-disallow-past-starting-dates';
+		private $handle = 'tribe-ext-custom-datepicker-start-date';
 
 		/**
 		 * The array of keys/values to get sent to the script
@@ -84,11 +89,11 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Di
 			 * The capability required to have this script not load.
 			 *
 			 * @param string $capability The minimum capability to be allowed to
-			 *                           choose a start date in the past.
+			 *                           choose any start date.
 			 *
 			 * @return string
 			 */
-			return (string) apply_filters( $this->get_handle_underscores() . '_cap_allowed_past_dates', 'xmanage_options' );
+			return (string) apply_filters( $this->get_handle_underscores() . '_cap_allowed_any_start_date', 'manage_options' );
 
 		}
 
@@ -289,7 +294,9 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Di
 			 *
 			 * Make sure it is *midnight in the site's/event's time zone* of the
 			 * allowed date. Example use case: you want to allow choosing start
-			 * dates up to 1 week in the past.
+			 * dates up to 1 week in the past. Make sure to account for existing
+             * events' start date or else existing events' start dates will be
+             * set to the minDate without any UI notice it happened.
 			 *
 			 * @param int $start_date The minimum allowable timestamp (midnight!).
 			 * @param int $post_id The Post ID.
@@ -311,7 +318,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Di
 		 * Load this extension's script on the wp-admin event add/edit screen.
 		 */
 		public function load_assets_for_event_admin_edit_screen() {
-			// bail if not on the wp-admin Event edit screen
+			// bail if not on the wp-admin event add/edit screen
 			global $current_screen;
 			global $post;
 
@@ -331,7 +338,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Di
 			 * Whether or not the script should load in wp-admin.
 			 *
 			 * Useful to override for specific users or other scenarios. For
-			 * example: allow selecting a past start date for a specific Post ID.
+			 * example: allow selecting any start date for a specific Post ID.
 			 *
 			 * @param bool $load_script Whether or not to load the script.
 			 * @param WP_Screen $current_screen The wp-admin global $current_screen.
@@ -370,7 +377,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Di
 			 * event add/edit form.
 			 *
 			 * Useful to override for specific users or other scenarios. For
-			 * example: allow selecting a past start date for a specific Post ID.
+			 * example: allow selecting any start date for a specific Post ID.
 			 *
 			 * @param bool $load_script Whether or not to load the script.
 			 * @param int $post_id The Post ID.
