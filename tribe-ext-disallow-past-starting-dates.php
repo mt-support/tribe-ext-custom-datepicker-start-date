@@ -22,23 +22,61 @@
  *     GNU General Public License for more details.
  */
 
+/**
+ * Known issue:
+ * If the user's local time zone and the site's time zone are on different
+ * calendar days (such as UTC+0 and UTC+1 and UTC is at 23:00:00), the
+ * datepicker will display the user's today as selectable but it won't be
+ * selectable. This is correct because the site owner does not want the user to
+ * select their own today because it's the site's yesterday.
+ *
+ * This odd UX is due to the jQuery UI Datepicker library not supporting
+ * time zones and the timepicker being a separate input.
+ */
+
 // Do not load unless Tribe Common is fully loaded and our class does not yet exist.
-if (
-	class_exists( 'Tribe__Extension' )
-	&& ! class_exists( 'Tribe__Extension__Disallow_Past_Start_Dates' )
-) {
+if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Disallow_Past_Start_Dates' ) ) {
 	/**
 	 * Extension main class, class begins loading on init() function.
 	 */
 	class Tribe__Extension__Disallow_Past_Start_Dates extends Tribe__Extension {
+		/**
+		 * The script's handle.
+		 */
 		private $handle = 'tribe-ext-disallow-past-starting-dates';
 
+		/**
+		 * The array of keys/values to get sent to the script
+		 *
+		 * @see wp_localize_script()
+		 *
+		 * @var array
+		 */
 		private $script_vars = array();
 
+		/**
+		 * The script's handle with underscores instead of hyphens.
+		 *
+		 * @return string
+		 */
 		private function get_handle_underscores() {
 			return str_replace( '-', '_', $this->handle );
 		}
 
+		/**
+		 * The input's CSS error class.
+		 *
+		 * @return string
+		 */
+		private function get_error_css_class() {
+			return $this->get_handle_underscores() . '_error';
+		}
+
+		/**
+		 * The WordPress capability required to be able to pick any date.
+		 *
+		 * @return string
+		 */
 		private function get_cap_allowed_any_date() {
 			/**
 			 * The capability required to have this script not load.
@@ -75,14 +113,32 @@ if (
 			// This action hook exists as of Community Events version 4.4
 			add_action( 'tribe_community_events_enqueue_resources', array( $this, 'load_assets_for_ce_form' ) );
 
-			// Tribe__Events__Main::addEventMeta() is hooked on 'save_post' at priority 15
-			add_action( 'save_post_' . Tribe__Events__Main::POSTTYPE, array( $this, 'protect_against_manually_entered_past_dates' ), 50, 2 );
-
+			// Add the error class' <style> to the <head>.
+			add_action( 'wp_head', array( $this, 'validation_style' ) );
+			add_action( 'admin_head', array( $this, 'validation_style' ) );
 		}
 
+		/**
+		 * Output the error class' <style>.
+		 */
+		public function validation_style() {
+			/**
+			 * This styling is almost exactly copied from wp-admin's forms.css.
+			 * Bonus: the red color is the same as from
+			 * .tribe-community-events .tribe-community-notice.tribe-community-notice-error
+			 */
+			?>
+            <style id="<?php echo $this->get_handle_underscores(); ?>">
+                .<?php echo $this->get_error_css_class(); ?> {
+                    border-color: #dc3232 !important;
+                    box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
+                }
+            </style>
+			<?php
+		}
 
 		/**
-		 * Register this view's assets.
+		 * Register this extension's asset(s).
 		 */
 		public function register_assets() {
 			$resources_url = trailingslashit( plugin_dir_url( __FILE__ ) ) . 'src/resources/';
@@ -91,51 +147,149 @@ if (
 
 			// `tribe-events-admin` dependency so the `tribe_datepicker_opts` JS variable is set by the time we need to extend it
 			// which comes from /wp-content/plugins/the-events-calendar/src/resources/js/events-admin.js
-			wp_register_script(
-				$this->handle,
-				$js,
-				array(
-					'jquery',
-					'tribe-events-admin'
-				),
-				$this->get_version(),
-				true
-			);
+			wp_register_script( $this->handle, $js, array(
+				'jquery',
+				'tribe-events-admin'
+			), $this->get_version(), true );
 		}
 
-		private function min_allowed_start_date_to_script_var( $post_id = 0 ) {
-			$start_date = $this->get_min_allowed_start_date( $post_id );
-			$this->script_vars['min_date'] = $start_date;
+		/**
+		 * Get the datepicker format from TEC settings. Default to 'Y-m-d'.
+		 *
+		 * @return string
+		 */
+		private function get_datepicker_format() {
+			$datepicker_format = Tribe__Date_Utils::datepicker_formats( tribe_get_option( 'datepickerFormat', 'Y-m-d' ) );
+
+			return $datepicker_format;
 		}
 
+		/**
+		 * Build the $this->script_vars array.
+		 *
+		 * @see wp_localize_script()
+		 *
+		 * @param int $post_id
+		 */
+		private function build_script_vars( $post_id = 0 ) {
+			$this->script_vars['min_date']    = $this->get_min_allowed_start_date( $post_id );
+			$this->script_vars['error_class'] = $this->get_error_css_class();
+		}
+
+		/**
+		 * Get the time zone to use for date calculations.
+		 *
+		 * @param int $post_id
+		 *
+		 * @return string
+		 */
+		private function get_timezone_string( $post_id = 0 ) {
+			$timezone = Tribe__Events__Timezones::get_event_timezone_string( $post_id );
+
+			/**
+			 * Override the time zone used for date calculations.
+			 *
+			 * @param string $timezone A named time zone (not manual UTC offset).
+			 * @param int $post_id The Post ID.
+			 *
+			 * @return string
+			 */
+			return (string) apply_filters( $this->get_handle_underscores() . '_timezone', $timezone, $post_id );
+		}
+
+		/**
+		 * Get the timestamp of "today at midnight" (the first second of today)
+		 * or midnight of a given timestamp.
+		 *
+		 * Because the datepicker is separate from the timepicker, we need to
+		 * make sure we are using midnight whenever setting the script's minDate.
+		 *
+		 * @see current_time()
+		 *
+		 * @param int $post_id
+		 * @param bool|int $timestamp
+		 *
+		 * @return int
+		 */
+		private function get_midnight_timestamp( $post_id = 0, $timestamp = false ) {
+			$datetime = new DateTime();
+
+			if ( empty( $timestamp ) ) {
+				$timestamp = ;
+			} else {
+				$timestamp = (int) $timestamp;
+			}
+
+			$datetime->setTimestamp( $timestamp );
+
+			$tz_string = $this->get_timezone_string( $post_id );
+
+			if ( ! in_array( $tz_string, timezone_identifiers_list() ) ) {
+				// This will fallback to UTC but may also return a TZ environment variable (e.g. EST), which could cause an error for DateTimeZone().
+				$tz_string = date_default_timezone_get();
+			}
+
+			$timezone = new DateTimeZone( $tz_string );
+
+			$datetime->setTimezone( $timezone );
+
+			// $datetime->setTime(0,0,0) will actually fast forward to tomorrow if in the 23rd hour so we do it this way instead...
+			$day = $datetime->format( 'Y-m-d' );
+
+			$day .= ' 00:00:00 ' . $tz_string;
+
+			$result = strtotime( $day ); // may return FALSE
+
+			return $result;
+		}
+
+		/**
+		 * Get the minimum allowed start date timestamp.
+		 *
+		 * @param int $post_id
+		 *
+		 * @return int
+		 */
 		private function get_min_allowed_start_date( $post_id = 0 ) {
-			$existing_start_date = get_post_meta( $post_id, '_EventStartDate', true );
+			// Will be FALSE for Add New Event
+			$existing_start_date = Tribe__Events__Timezones::event_start_timestamp( $post_id );
 
-			$start_date = (int) current_time( 'timestamp' );
+			$existing_start_date = $this->get_midnight_timestamp( $post_id, $existing_start_date );
 
-			if ( ! empty( $existing_start_date ) ) {
-				$event_start_date = (int) Tribe__Events__Timezones::event_start_timestamp( $post_id );
-				$start_date       = min( $event_start_date, $start_date );
+			$today = $this->get_midnight_timestamp( $post_id );
+
+			if ( is_int( $existing_start_date ) && is_int( $today ) && $today !== $existing_start_date ) {
+				$start_date = min( $existing_start_date, $today );
+			} else {
+				$start_date = $today;
 			}
 
 			/**
-			 * Override the minimum start date.
+			 * Override the minimum start date timestamp.
 			 *
-			 * Example use case: you want to allow choosing start dates up to 1
-			 * week in the past.
+			 * Make sure it is *midnight in the site's/event's time zone* of the
+			 * allowed date. Example use case: you want to allow choosing start
+			 * dates up to 1 week in the past.
 			 *
-			 * @param string $start_date          The minimum allowable date
-			 *                                    in timestamp format.
-			 * @param int    $post_id             The Post ID.
+			 * @param int $start_date The minimum allowable timestamp (midnight!).
+			 * @param int $post_id The Post ID.
 			 * @param string $existing_start_date The event's existing start date.
 			 *
-			 * @return bool
+			 * @return int
 			 */
-			$start_date = (string) apply_filters( $this->get_handle_underscores() . '_min_start_date', $start_date, $post_id, $existing_start_date );
+			$start_date_filtered = (int) apply_filters( $this->get_handle_underscores() . '_min_start_timestamp', $start_date, $post_id, $existing_start_date );
 
-			return $start_date;
+			// Protect against accidental value turned into zero due to (int).
+			if ( empty( $start_date_filtered ) ) {
+				$start_date_filtered = $start_date;
+			}
+
+			return $start_date_filtered;
 		}
 
+		/**
+		 * Load this extension's script on the wp-admin event add/edit screen.
+		 */
 		public function load_assets_for_event_admin_edit_screen() {
 			// bail if not on the wp-admin Event edit screen
 			global $current_screen;
@@ -159,9 +313,9 @@ if (
 			 * Useful to override for specific users or other scenarios. For
 			 * example: allow selecting a past start date for a specific Post ID.
 			 *
-			 * @param bool      $load_script    Whether or not to load the script.
+			 * @param bool $load_script Whether or not to load the script.
 			 * @param WP_Screen $current_screen The wp-admin global $current_screen.
-			 * @param WP_Post   $post           The WP_Post object.
+			 * @param WP_Post $post The WP_Post object.
 			 *
 			 * @return bool
 			 */
@@ -170,12 +324,15 @@ if (
 			if ( $load_script ) {
 				wp_enqueue_script( $this->handle );
 
-				// Pass the start date to the JS script.
-				$this->min_allowed_start_date_to_script_var( $post->ID );
+				// Pass the PHP to the JS.
+				$this->build_script_vars( $post->ID );
 				wp_localize_script( $this->handle, 'php_vars', $this->script_vars );
 			}
 		}
 
+		/**
+		 * Load this extension's script on Community Events' event add/edit form.
+		 */
 		public function load_assets_for_ce_form() {
 			global $tribe_community_event_id;
 
@@ -190,13 +347,13 @@ if (
 
 			/**
 			 * Whether or not the script should load on the Community Events
-			 * event edit form.
+			 * event add/edit form.
 			 *
 			 * Useful to override for specific users or other scenarios. For
 			 * example: allow selecting a past start date for a specific Post ID.
 			 *
 			 * @param bool $load_script Whether or not to load the script.
-			 * @param int  $post_id     The Post ID.
+			 * @param int $post_id The Post ID.
 			 *
 			 * @return bool
 			 */
@@ -205,8 +362,8 @@ if (
 			if ( $load_script ) {
 				wp_enqueue_script( $this->handle );
 
-				// Pass the start date to the JS script.
-				$this->min_allowed_start_date_to_script_var( $post_id );
+				// Pass the PHP to the JS.
+				$this->build_script_vars( $post_id );
 				wp_localize_script( $this->handle, 'php_vars', $this->script_vars );
 			}
 		}
