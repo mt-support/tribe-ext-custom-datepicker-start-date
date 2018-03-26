@@ -208,18 +208,18 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		 *
 		 * @return string
 		 */
-		private function get_timezone_string( $post_id = 0 ) {
-			$timezone = Tribe__Events__Timezones::get_event_timezone_string( $post_id );
+		private function get_time_zone_string( $post_id = 0 ) {
+			$time_zone = Tribe__Events__Timezones::get_event_timezone_string( $post_id );
 
 			/**
 			 * Override the time zone used for date calculations.
 			 *
-			 * @param string $timezone A named time zone (not manual UTC offset).
+			 * @param string $time_zone A named time zone (not manual UTC offset).
 			 * @param int $post_id The Post ID.
 			 *
 			 * @return string
 			 */
-			return (string) apply_filters( $this->get_handle_underscores() . '_timezone', $timezone, $post_id );
+			return (string) apply_filters( $this->get_handle_underscores() . '_time_zone', $time_zone, $post_id );
 		}
 
 		/**
@@ -247,16 +247,16 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 
 			$datetime->setTimestamp( $timestamp );
 
-			$tz_string = $this->get_timezone_string( $post_id );
+			$tz_string = $this->get_time_zone_string( $post_id );
 
 			if ( ! in_array( $tz_string, timezone_identifiers_list() ) ) {
 				// This will fallback to UTC but may also return a TZ environment variable (e.g. EST), which could cause an error for DateTimeZone().
 				$tz_string = date_default_timezone_get();
 			}
 
-			$timezone = new DateTimeZone( $tz_string );
+			$time_zone = new DateTimeZone( $tz_string );
 
-			$datetime->setTimezone( $timezone );
+			$datetime->setTimezone( $time_zone );
 
 			// $datetime->setTime(0,0,0) will actually fast forward to tomorrow if in the 23rd hour so we do it this way instead...
 			$day = $datetime->format( 'Y-m-d' );
