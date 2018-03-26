@@ -103,7 +103,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		 */
 		public function construct() {
 			$this->add_required_plugin( 'Tribe__Events__Main' );
-			//$this->set_url( 'https://theeventscalendar.com/extensions/TBD/' );
+			$this->set_url( 'https://theeventscalendar.com/extensions/custom-datepicker-start-date/' );
 		}
 
 		/**
