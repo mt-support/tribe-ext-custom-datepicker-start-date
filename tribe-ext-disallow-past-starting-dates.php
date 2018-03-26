@@ -113,6 +113,21 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			// Load plugin textdomain
 			load_plugin_textdomain( $this->handle, false, basename( dirname( __FILE__ ) ) . '/languages/' );
 
+			// Requires PHP 5.3+ to use DateTime::setTimestamp()
+			if ( version_compare( PHP_VERSION, '5.3', '<' ) ) {
+				$message = '<p>' . $this->get_name();
+
+				$message .= __( ' requires PHP 5.3 or newer to work. Please contact your website host and inquire about updating PHP.', 'tribe-ext-custom-datepicker-start-date' );
+
+				$message .= sprintf( ' <a href="%1$s">%1$s</a>', 'https://wordpress.org/about/requirements/' );
+
+				$message .= '</p>';
+
+				tribe_notice( $this->get_name(), $message, 'type=error' );
+
+				return;
+			}
+
 			add_action( 'init', array( $this, 'register_assets' ) );
 
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_assets_for_event_admin_edit_screen' ) );
