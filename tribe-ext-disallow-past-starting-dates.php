@@ -244,24 +244,12 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		 * Because the datepicker is separate from the timepicker, we need to
 		 * make sure we are using midnight whenever setting the script's minDate.
 		 *
-		 * @see current_time()
-		 *
 		 * @param int $post_id
 		 * @param bool|int $timestamp
 		 *
 		 * @return int
 		 */
 		private function get_midnight_timestamp( $post_id = 0, $timestamp = false ) {
-			$datetime = new DateTime();
-
-			if ( empty( $timestamp ) ) {
-				$timestamp = (int) current_time( 'timestamp' );
-			} else {
-				$timestamp = (int) $timestamp;
-			}
-
-			$datetime->setTimestamp( $timestamp );
-
 			$tz_string = $this->get_time_zone_string( $post_id );
 
 			if ( ! in_array( $tz_string, timezone_identifiers_list() ) ) {
@@ -271,16 +259,18 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 
 			$time_zone = new DateTimeZone( $tz_string );
 
-			$datetime->setTimezone( $time_zone );
+			$datetime = new DateTime( '', $time_zone );
 
-			// $datetime->setTime(0,0,0) will actually fast forward to tomorrow if in the 23rd hour so we do it this way instead...
-			$day = $datetime->format( 'Y-m-d' );
+			if ( ! empty( $timestamp ) ) {
+				$timestamp = (int) $timestamp;
+				if ( 0 !== $timestamp ) {
+					$datetime->setTimestamp( $timestamp );
+				}
+			}
 
-			$day .= ' 00:00:00 ' . $tz_string;
+			$datetime->setTime( 0, 0, 0 );
 
-			$result = strtotime( $day ); // may return FALSE
-
-			return $result;
+			return $datetime->getTimestamp();
 		}
 
 		/**
@@ -291,8 +281,14 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		 * @return int
 		 */
 		private function get_min_allowed_start_date( $post_id = 0 ) {
-			// Will be FALSE for Add New Event
-			$existing_start_date = Tribe__Events__Timezones::event_start_timestamp( $post_id );
+			$tz_string = $this->get_time_zone_string( $post_id );
+
+			$existing_start_date = get_post_meta( $post_id, "_EventStartDate", true );
+
+			if ( ! empty( $existing_start_date ) ) {
+				$existing_start_date .= ' ' . $tz_string;
+				$existing_start_date = strtotime( $existing_start_date );
+			}
 
 			$existing_start_date = $this->get_midnight_timestamp( $post_id, $existing_start_date );
 
