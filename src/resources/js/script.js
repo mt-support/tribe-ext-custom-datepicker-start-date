@@ -3,6 +3,13 @@ jQuery(document).ready(function ($) {
     var min_date = new Date(php_vars.min_date * 1000); // JS uses milliseconds; PHP does not
 
     /**
+     * Set the maxDate. Note that we do not do anything "fancy" with it, like
+     * convert to milliseconds or to a JS Date() object because it's straight
+     * from the PHP filter hook and typically should be a dynamic date.
+     */
+    start_date_input.datepicker('option', 'maxDate', php_vars.max_date);
+
+    /**
      * Set the minDate and watch it for changes in case user manually enters a
      * value, in which case we set the value to blank and add the error class.
      */

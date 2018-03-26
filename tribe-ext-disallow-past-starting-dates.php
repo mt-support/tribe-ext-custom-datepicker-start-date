@@ -56,6 +56,8 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Di
 
 		/**
 		 * The script's handle with underscores instead of hyphens.
+         *
+         * Used for building filter and action hook names and CSS class name.
 		 *
 		 * @return string
 		 */
@@ -172,7 +174,25 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Di
 		 * @param int $post_id
 		 */
 		private function build_script_vars( $post_id = 0 ) {
+			/**
+			 * The value to send to jQuery UI Datepicker's initial maxDate value
+             * for the start date.
+			 *
+			 * For example: Useful if you want to restrict the start date to be
+             * no more than 3 weeks in the future, in which case you would
+             * filter it to be "3w".
+			 *
+             * @link https://jqueryui.com/datepicker/#min-max
+			 *
+			 * @param string $max_date The start datepicker's maxDate.
+			 * @param int $post_id     The Post ID.
+			 *
+			 * @return bool
+			 */
+            $max_date = apply_filters( $this->get_handle_underscores() . '_max_date', '', $post_id );
+
 			$this->script_vars['min_date']    = $this->get_min_allowed_start_date( $post_id );
+			$this->script_vars['max_date']    = $max_date;
 			$this->script_vars['error_class'] = $this->get_error_css_class();
 		}
 
@@ -215,7 +235,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Di
 			$datetime = new DateTime();
 
 			if ( empty( $timestamp ) ) {
-				$timestamp = ;
+				$timestamp = (int) current_time( 'timestamp' );
 			} else {
 				$timestamp = (int) $timestamp;
 			}
