@@ -61,8 +61,8 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 
 		/**
 		 * The script's handle with underscores instead of hyphens.
-         *
-         * Used for building filter and action hook names and CSS class name.
+		 *
+		 * Used for building filter and action hook names and CSS class name.
 		 *
 		 * @return string
 		 */
@@ -135,12 +135,12 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 * .tribe-community-events .tribe-community-notice.tribe-community-notice-error
 			 */
 			?>
-            <style id="<?php echo $this->get_handle_underscores(); ?>">
-                .<?php echo $this->get_error_css_class(); ?> {
-                    border-color: #dc3232 !important;
-                    box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
-                }
-            </style>
+			<style id="<?php echo $this->get_handle_underscores(); ?>">
+				.<?php echo $this->get_error_css_class(); ?> {
+					border-color: #dc3232 !important;
+					box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
+				}
+			</style>
 			<?php
 		}
 
@@ -181,20 +181,20 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		private function build_script_vars( $post_id = 0 ) {
 			/**
 			 * The value to send to jQuery UI Datepicker's initial maxDate value
-             * for the start date.
+			 * for the start date.
 			 *
 			 * For example: Useful if you want to restrict the start date to be
-             * no more than 3 weeks in the future, in which case you would
-             * filter it to be "3w".
+			 * no more than 3 weeks in the future, in which case you would
+			 * filter it to be "3w".
 			 *
-             * @link https://jqueryui.com/datepicker/#min-max
+			 * @link https://jqueryui.com/datepicker/#min-max
 			 *
 			 * @param string $max_date The start datepicker's maxDate.
-			 * @param int $post_id     The Post ID.
+			 * @param int $post_id The Post ID.
 			 *
 			 * @return bool
 			 */
-            $max_date = apply_filters( $this->get_handle_underscores() . '_max_date', '', $post_id );
+			$max_date = apply_filters( $this->get_handle_underscores() . '_max_date', '', $post_id );
 
 			$this->script_vars['min_date']    = $this->get_min_allowed_start_date( $post_id );
 			$this->script_vars['max_date']    = $max_date;
@@ -295,8 +295,8 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 * Make sure it is *midnight in the site's/event's time zone* of the
 			 * allowed date. Example use case: you want to allow choosing start
 			 * dates up to 1 week in the past. Make sure to account for existing
-             * events' start date or else existing events' start dates will be
-             * set to the minDate without any UI notice it happened.
+			 * events' start date or else existing events' start dates will be
+			 * set to the minDate without any UI notice it happened.
 			 *
 			 * @param int $start_date The minimum allowable timestamp (midnight!).
 			 * @param int $post_id The Post ID.
