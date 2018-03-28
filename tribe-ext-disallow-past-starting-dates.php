@@ -359,7 +359,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		private function get_min_allowed_start_date( $post_id = 0 ) {
 			$tz_string = $this->get_time_zone_string( $post_id );
 
-			$existing_start_date = get_post_meta( $post_id, "_EventStartDate", true );
+			$existing_start_date = get_post_meta( $post_id, '_EventStartDate', true );
 
 			if ( ! empty( $existing_start_date ) ) {
 				$existing_start_date .= ' ' . $tz_string;
