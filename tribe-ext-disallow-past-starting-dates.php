@@ -200,16 +200,18 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 *
 			 * For example: Useful if you want to restrict the start date to be
 			 * no more than 3 weeks in the future, in which case you would
-			 * filter it to be "3w".
+			 * determine the PHP timestamp of midnight that day. Don't forget to
+             * account for existing start dates as well as new events.
 			 *
 			 * @link https://jqueryui.com/datepicker/#min-max
 			 *
-			 * @param string $max_date The start datepicker's maxDate.
+			 * @param int $max_date Timestamp to set as the start datepicker's
+             *                      maxDate. If zero, maxDate will not be set.
 			 * @param int $post_id The Post ID.
 			 *
 			 * @return bool
 			 */
-			$max_date = apply_filters( $this->get_handle_underscores() . '_max_date', '', $post_id );
+			$max_date = apply_filters( $this->get_handle_underscores() . '_max_date', 0, $post_id );
 
 			$this->script_vars['min_date']    = $this->get_min_allowed_start_date( $post_id );
 			$this->script_vars['max_date']    = $max_date;
