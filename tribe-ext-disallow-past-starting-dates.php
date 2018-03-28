@@ -48,7 +48,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		/**
 		 * The script's handle.
 		 */
-		private $handle = 'tribe-ext-custom-datepicker-start-date';
+		public $handle = 'tribe-ext-custom-datepicker-start-date';
 
 		/**
 		 * The array of keys/values to send to the script.
@@ -91,7 +91,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		 *
 		 * @return string
 		 */
-		private function get_handle_underscores() {
+		public function get_handle_underscores() {
 			return str_replace( '-', '_', $this->handle );
 		}
 
