@@ -65,7 +65,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		 * This will remain NULL if this is a new (non-existing) event or if its
 		 * start date is TODAY.
 		 *
-		 * @see Tribe__Extension__Custom_Datepicker_Start_Date::get_min_allowed_start_date()
+		 * @see Tribe__Extension__Custom_Datepicker_Start_Date::get_min_date()
 		 *
 		 * @var null|int
 		 */
@@ -78,7 +78,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		 * This will remain NULL if this is a new (non-existing) event or if its
 		 * start date is TODAY.
 		 *
-		 * @see Tribe__Extension__Custom_Datepicker_Start_Date::get_min_allowed_start_date()
+		 * @see Tribe__Extension__Custom_Datepicker_Start_Date::get_min_date()
 		 *
 		 * @var null|int
 		 */
@@ -175,12 +175,12 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 * .tribe-community-events .tribe-community-notice.tribe-community-notice-error
 			 */
 			?>
-            <style id="<?php echo $this->get_handle_underscores(); ?>">
-                .<?php echo $this->get_error_css_class(); ?> {
-                    border-color: #dc3232 !important;
-                    box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
-                }
-            </style>
+			<style id="<?php echo $this->get_handle_underscores(); ?>">
+				.<?php echo $this->get_error_css_class(); ?> {
+					border-color: #dc3232 !important;
+					box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
+				}
+			</style>
 			<?php
 		}
 
@@ -221,57 +221,9 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		private function build_script_vars( $post_id = 0 ) {
 			$this->script_vars['error_class'] = $this->get_error_css_class();
 
-			// We do this before setting max_date so that $this->timestamp_existing_start_date is set, if applicable.
-			$this->script_vars['min_date'] = $this->get_min_allowed_start_date( $post_id );
-
-			/**
-			 * The time forward from today to allow as the maximum start date.
-			 * Must be in the PHP DateInterval class format.
-			 *
-			 * For example: Useful if you want to restrict the start date to be
-			 * no more than 21 days in the future, in which case you would pass
-			 * 'P21D'. Note this would allow selecting from 22 calendar days
-			 * because this is "days after today", not "days including today".
-			 * If an existing event's start date is already set to
-			 * further in the future (e.g. 30 days), the maximum start date will
-			 * be that instead. This is the same logic behind setting the
-			 * minimum start date.
-			 *
-			 * @link https://secure.php.net/manual/class.dateinterval.php
-			 *
-			 * @param string $date_interval This must be a string acceptable to
-			 *                              PHP's DateInterval class, including
-			 *                              the leading 'P'.
-			 * @param null|int $existing_event_start_timestamp Timestamp of
-			 *                              midnight of the start date of an
-			 *                              existing event. Null if not an existing
-			 *                              event or if its start date is today.
-			 * @param int $post_id The Post ID.
-			 *
-			 * @return string
-			 */
-			$interval = (string) apply_filters( $this->get_handle_underscores() . '_max_date_interval', '', $this->timestamp_existing_start_date, $post_id );
-
-			$interval = strtoupper( $interval ); // 'P1m' needs to be 'P1M' or else fatal error
-
-			if ( empty( $interval ) ) {
-				$max_date = '';
-			} else {
-				$today = $this->get_midnight_datetime();
-				$today->add( new DateInterval( $interval ) );
-				$today->setTime( 0, 0, 0 );
-				$max_date = $today->getTimestamp();
-
-				if (
-					$this->timestamp_max_today_or_existing
-					&& $max_date < $this->timestamp_max_today_or_existing
-				) {
-					$max_date = $this->timestamp_max_today_or_existing;
-				}
-			}
-
-			// The JS script will handle zero or empty string as if not setting maxDate at all.
-			$this->script_vars['max_date'] = $max_date;
+			// Must run $this->get_min_date() before $this->get_max_date()
+			$this->script_vars['min_date'] = $this->get_min_date( $post_id );
+			$this->script_vars['max_date'] = $this->get_max_date( $post_id );
 		}
 
 		/**
@@ -335,28 +287,13 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		}
 
 		/**
-		 * Get the timestamp of "today at midnight" (the first second of today)
-		 * or midnight of a given timestamp.
-		 *
-		 * @param int $post_id
-		 * @param bool|int $timestamp
-		 *
-		 * @return int
-		 */
-		private function get_midnight_timestamp( $post_id = 0, $timestamp = false ) {
-			$datetime = $this->get_midnight_datetime( $post_id, $timestamp );
-
-			return $datetime->getTimestamp();
-		}
-
-		/**
 		 * Get the minimum allowed start date timestamp.
 		 *
 		 * @param int $post_id
 		 *
 		 * @return int
 		 */
-		private function get_min_allowed_start_date( $post_id = 0 ) {
+		private function get_min_date( $post_id = 0 ) {
 			$tz_string = $this->get_time_zone_string( $post_id );
 
 			$existing_start_date = get_post_meta( $post_id, '_EventStartDate', true );
@@ -366,9 +303,11 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 				$existing_start_date = strtotime( $existing_start_date );
 			}
 
-			$existing_start_date = $this->get_midnight_timestamp( $post_id, $existing_start_date );
+			$existing_start_date_datetime = $this->get_midnight_datetime( $post_id, $existing_start_date );
+			$existing_start_date          = $existing_start_date_datetime->getTimestamp();
 
-			$today = $this->get_midnight_timestamp( $post_id );
+			$today_datetime = $this->get_midnight_datetime( $post_id );
+			$today          = $today_datetime->getTimestamp();
 
 			if (
 				is_int( $existing_start_date )
@@ -385,28 +324,112 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			}
 
 			/**
-			 * Override the minimum start date timestamp.
+			 * The time in the past from today to allow as the minimum start
+			 * date. Must be in the PHP DateInterval class format.
 			 *
-			 * Make sure it is *midnight in the site's/event's time zone* of the
-			 * allowed date. Example use case: you want to allow choosing start
-			 * dates up to 1 week in the past. Make sure to account for existing
-			 * events' start date or else existing events' start dates will be
-			 * set to the minDate without any UI notice it happened.
+			 * Left unused, the earliest allowable start date for new events
+			 * will be Today. If you wanted to allow setting a start date up to
+			 * 7 days in the past but not further in the past than that, you
+			 * would filter this to be 'P7D'. Note this is "days before today",
+			 * not "days including today". If an existing event's start date is
+			 * already set to further in the past (e.g. 14 days), the minimum
+			 * start date will be that instead. This is the same logic behind
+			 * setting the maximum start date.
 			 *
-			 * @param int $start_date The minimum allowable timestamp (midnight!).
+			 * @link https://secure.php.net/manual/class.dateinterval.php
+			 *
+			 * @param string $date_interval This must be a string acceptable to
+			 *                              PHP's DateInterval class, including
+			 *                              the leading 'P'.
+			 * @param null|int $existing_event_start_timestamp Timestamp of
+			 *                              midnight of the start date of an
+			 *                              existing event. Null if not an existing
+			 *                              event or if its start date is today.
 			 * @param int $post_id The Post ID.
-			 * @param string $existing_start_date The event's existing start date.
 			 *
-			 * @return int
+			 * @return string
 			 */
-			$start_date_filtered = (int) apply_filters( $this->get_handle_underscores() . '_min_start_timestamp', $start_date, $post_id, $existing_start_date );
+			$interval = (string) apply_filters( $this->get_handle_underscores() . '_min_date_interval', '', $this->timestamp_existing_start_date, $post_id );
 
-			// Protect against accidental value turned into zero due to (int).
-			if ( empty( $start_date_filtered ) ) {
-				$start_date_filtered = $start_date;
+			$interval = strtoupper( $interval ); // e.g. 'P7d' would be a fatal error
+
+			if ( empty( $interval ) ) {
+				$min_date = $start_date; // minDate must be set but maxDate does not have to be
+			} else {
+				$today_datetime->sub( new DateInterval( $interval ) );
+				$today_datetime->setTime( 0, 0, 0 );
+				$min_date = $today_datetime->getTimestamp();
+
+				if (
+					$this->timestamp_max_today_or_existing
+					&& $min_date > $this->timestamp_max_today_or_existing
+				) {
+					$min_date = $this->timestamp_max_today_or_existing;
+				}
 			}
 
-			return $start_date_filtered;
+			return $min_date;
+		}
+
+		/**
+		 * Get the value to send to the JS maxDate option.
+		 *
+		 * This will either be an empty string, which our JS can account for, or
+		 * a timestamp.
+		 * Run through $this->get_min_date() before running this to ensure
+		 * $this->timestamp_existing_start_date is set, if applicable.
+		 *
+		 * @param int $post_id
+		 *
+		 * @return string|int
+		 */
+		private function get_max_date( $post_id = 0 ) {
+			/**
+			 * The time forward from today to allow as the maximum start date.
+			 * Must be in the PHP DateInterval class format.
+			 *
+			 * For example: Useful if you want to restrict the start date to be
+			 * no more than 21 days in the future, in which case you would pass
+			 * 'P21D'. Note this is "days after today", not "days including
+			 * today". If an existing event's start date is already set to
+			 * further in the future (e.g. 30 days), the maximum start date will
+			 * be that instead. This is the same logic behind setting the
+			 * minimum start date.
+			 *
+			 * @link https://secure.php.net/manual/class.dateinterval.php
+			 *
+			 * @param string $date_interval This must be a string acceptable to
+			 *                              PHP's DateInterval class, including
+			 *                              the leading 'P'.
+			 * @param null|int $existing_event_start_timestamp Timestamp of
+			 *                              midnight of the start date of an
+			 *                              existing event. Null if not an existing
+			 *                              event or if its start date is today.
+			 * @param int $post_id The Post ID.
+			 *
+			 * @return string
+			 */
+			$interval = (string) apply_filters( $this->get_handle_underscores() . '_max_date_interval', '', $this->timestamp_existing_start_date, $post_id );
+
+			$interval = strtoupper( $interval ); // e.g. 'P1m' would be a fatal error
+
+			if ( empty( $interval ) ) {
+				$max_date = '';
+			} else {
+				$today = $this->get_midnight_datetime();
+				$today->add( new DateInterval( $interval ) );
+				$today->setTime( 0, 0, 0 );
+				$max_date = $today->getTimestamp();
+
+				if (
+					$this->timestamp_max_today_or_existing
+					&& $max_date < $this->timestamp_max_today_or_existing
+				) {
+					$max_date = $this->timestamp_max_today_or_existing;
+				}
+			}
+
+			return $max_date;
 		}
 
 		/**
