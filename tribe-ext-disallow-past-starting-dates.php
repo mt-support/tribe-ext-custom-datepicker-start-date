@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       The Events Calendar Extension: Custom Datepicker Start Date
- * Description:       Restrict the event start date for non-Administrator users. Disallows setting a start date in the past by default. Filters exist for customizing to something else and for setting a maxDate. Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
+ * Description:       Restrict the event start date for non-Administrator users. Disallows setting a start date in the past by default. Filters exist for customizing to something else and for setting a maximum future start date. Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
  * Version:           1.0.0
  * Extension Class:   Tribe__Extension__Custom_Datepicker_Start_Date
  * GitHub Plugin URI: https://github.com/mt-support/tribe-ext-custom-datepicker-start-date
@@ -51,13 +51,38 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		private $handle = 'tribe-ext-custom-datepicker-start-date';
 
 		/**
-		 * The array of keys/values to get sent to the script
+		 * The array of keys/values to send to the script.
 		 *
 		 * @see wp_localize_script()
 		 *
 		 * @var array
 		 */
 		private $script_vars = array();
+
+		/**
+		 * The existing start date's midnight timestamp.
+		 *
+		 * This will remain NULL if this is a new (non-existing) event or if its
+		 * start date is TODAY.
+		 *
+		 * @see Tribe__Extension__Custom_Datepicker_Start_Date::get_min_allowed_start_date()
+		 *
+		 * @var null|int
+		 */
+		private $timestamp_existing_start_date = null;
+
+		/**
+		 * The timestamp of whichever is greater between Today and an existing
+		 * event's start time, if applicable.
+		 *
+		 * This will remain NULL if this is a new (non-existing) event or if its
+		 * start date is TODAY.
+		 *
+		 * @see Tribe__Extension__Custom_Datepicker_Start_Date::get_min_allowed_start_date()
+		 *
+		 * @var null|int
+		 */
+		private $timestamp_max_today_or_existing = null;
 
 		/**
 		 * The script's handle with underscores instead of hyphens.
@@ -194,28 +219,59 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		 * @param int $post_id
 		 */
 		private function build_script_vars( $post_id = 0 ) {
+			$this->script_vars['error_class'] = $this->get_error_css_class();
+
+			// We do this before setting max_date so that $this->timestamp_existing_start_date is set, if applicable.
+			$this->script_vars['min_date'] = $this->get_min_allowed_start_date( $post_id );
+
 			/**
-			 * The value to send to jQuery UI Datepicker's initial maxDate value
-			 * for the start date.
+			 * The time forward from today to allow as the maximum start date.
+			 * Must be in the PHP DateInterval class format.
 			 *
 			 * For example: Useful if you want to restrict the start date to be
-			 * no more than 3 weeks in the future, in which case you would
-			 * determine the PHP timestamp of midnight that day. Don't forget to
-             * account for existing start dates as well as new events.
+			 * no more than 21 days in the future, in which case you would pass
+			 * 'P21D'. Note this would allow selecting from 22 calendar days
+			 * because this is "days after today", not "days including today".
+			 * If an existing event's start date is already set to
+			 * further in the future (e.g. 30 days), the maximum start date will
+			 * be that instead. This is the same logic behind setting the
+			 * minimum start date.
 			 *
-			 * @link https://jqueryui.com/datepicker/#min-max
+			 * @link https://secure.php.net/manual/class.dateinterval.php
 			 *
-			 * @param int $max_date Timestamp to set as the start datepicker's
-             *                      maxDate. If zero, maxDate will not be set.
+			 * @param string $date_interval This must be a string acceptable to
+			 *                              PHP's DateInterval class, including
+			 *                              the leading 'P'.
+			 * @param null|int $existing_event_start_timestamp Timestamp of
+			 *                              midnight of the start date of an
+			 *                              existing event. Null if not an existing
+			 *                              event or if its start date is today.
 			 * @param int $post_id The Post ID.
 			 *
-			 * @return bool
+			 * @return string
 			 */
-			$max_date = apply_filters( $this->get_handle_underscores() . '_max_date', 0, $post_id );
+			$interval = (string) apply_filters( $this->get_handle_underscores() . '_max_date_interval', '', $this->timestamp_existing_start_date, $post_id );
 
-			$this->script_vars['min_date']    = $this->get_min_allowed_start_date( $post_id );
-			$this->script_vars['max_date']    = $max_date;
-			$this->script_vars['error_class'] = $this->get_error_css_class();
+			$interval = strtoupper( $interval ); // 'P1m' needs to be 'P1M' or else fatal error
+
+			if ( empty( $interval ) ) {
+				$max_date = '';
+			} else {
+				$today = $this->get_midnight_datetime();
+				$today->add( new DateInterval( $interval ) );
+				$today->setTime( 0, 0, 0 );
+				$max_date = $today->getTimestamp();
+
+				if (
+					$this->timestamp_max_today_or_existing
+					&& $max_date < $this->timestamp_max_today_or_existing
+				) {
+					$max_date = $this->timestamp_max_today_or_existing;
+				}
+			}
+
+			// The JS script will handle zero or empty string as if not setting maxDate at all.
+			$this->script_vars['max_date'] = $max_date;
 		}
 
 		/**
@@ -236,28 +292,31 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 *
 			 * @return string
 			 */
-			return (string) apply_filters( $this->get_handle_underscores() . '_time_zone', $time_zone, $post_id );
+			$time_zone = (string) apply_filters( $this->get_handle_underscores() . '_time_zone', $time_zone, $post_id );
+
+			if ( ! in_array( $time_zone, timezone_identifiers_list() ) ) {
+				// This will fallback to UTC but may also return a TZ environment variable (e.g. EST), which could cause an error for DateTimeZone().
+				$time_zone = date_default_timezone_get();
+			}
+
+			return $time_zone;
 		}
 
 		/**
-		 * Get the timestamp of "today at midnight" (the first second of today)
-		 * or midnight of a given timestamp.
+		 * Get the PHP DateTime object of "today at midnight" (the first second
+		 * of today) or midnight of a given timestamp.
 		 *
 		 * Because the datepicker is separate from the timepicker, we need to
-		 * make sure we are using midnight whenever setting the script's minDate.
+		 * make sure we are using midnight whenever setting the script's minDate
+		 * or maxDate.
 		 *
 		 * @param int $post_id
 		 * @param bool|int $timestamp
 		 *
-		 * @return int
+		 * @return DateTime
 		 */
-		private function get_midnight_timestamp( $post_id = 0, $timestamp = false ) {
+		private function get_midnight_datetime( $post_id = 0, $timestamp = false ) {
 			$tz_string = $this->get_time_zone_string( $post_id );
-
-			if ( ! in_array( $tz_string, timezone_identifiers_list() ) ) {
-				// This will fallback to UTC but may also return a TZ environment variable (e.g. EST), which could cause an error for DateTimeZone().
-				$tz_string = date_default_timezone_get();
-			}
 
 			$time_zone = new DateTimeZone( $tz_string );
 
@@ -271,6 +330,21 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			}
 
 			$datetime->setTime( 0, 0, 0 );
+
+			return $datetime;
+		}
+
+		/**
+		 * Get the timestamp of "today at midnight" (the first second of today)
+		 * or midnight of a given timestamp.
+		 *
+		 * @param int $post_id
+		 * @param bool|int $timestamp
+		 *
+		 * @return int
+		 */
+		private function get_midnight_timestamp( $post_id = 0, $timestamp = false ) {
+			$datetime = $this->get_midnight_datetime( $post_id, $timestamp );
 
 			return $datetime->getTimestamp();
 		}
@@ -296,7 +370,15 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 
 			$today = $this->get_midnight_timestamp( $post_id );
 
-			if ( is_int( $existing_start_date ) && is_int( $today ) && $today !== $existing_start_date ) {
+			if (
+				is_int( $existing_start_date )
+				&& is_int( $today )
+				&& $today !== $existing_start_date
+			) {
+				$this->timestamp_existing_start_date = $existing_start_date;
+
+				$this->timestamp_max_today_or_existing = max( $existing_start_date, $today );
+
 				$start_date = min( $existing_start_date, $today );
 			} else {
 				$start_date = $today;

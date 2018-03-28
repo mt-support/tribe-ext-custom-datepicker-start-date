@@ -9,7 +9,7 @@ Stable tag: 1.0.0
 License: GPL version 3 or any later version
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Restrict the event start date for non-Administrator users. Disallows setting a start date in the past by default. Filters exist for customizing to something else and for setting a maxDate. Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
+Restrict the event start date for non-Administrator users. Disallows setting a start date in the past by default. Filters exist for customizing to something else and for setting a maximum future start date. Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
 
 == Description ==
 
@@ -17,7 +17,7 @@ Restrict the event start date for non-Administrator users.
 
 Disallows setting a start date in the past by default.
 
-Filters exist for customizing to something else and for setting a maxDate.
+Filters exist for customizing to something else and for setting a maximum future start date.
 
 Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
 
@@ -41,6 +41,6 @@ We're always interested in your feedback and our [premium forums](https://theeve
 
 == Changelog ==
 
-= 1.0.0 2018-03-26 =
+= 1.0.0 2018-03-28 =
 
 * Initial release
