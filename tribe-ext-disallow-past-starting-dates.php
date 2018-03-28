@@ -138,7 +138,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			// Load plugin textdomain
 			load_plugin_textdomain( $this->handle, false, basename( dirname( __FILE__ ) ) . '/languages/' );
 
-			// Requires PHP 5.3+ to use DateTime::setTimestamp()
+			// Requires PHP 5.3+ to use DateTime::setTimestamp() and the DateInterval class.
 			if ( version_compare( PHP_VERSION, '5.3', '<' ) ) {
 				$message = '<p>' . $this->get_name();
 
