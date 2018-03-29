@@ -262,18 +262,24 @@ if (
 		private function get_midnight_datetime( $post_id = 0, $timestamp = false ) {
 			$tz_string = $this->get_time_zone_string( $post_id );
 
-			$time_zone = new DateTimeZone( $tz_string );
+			try {
+				$time_zone = new DateTimeZone( $tz_string );
 
-			$datetime = new DateTime( '', $time_zone );
+				$datetime = new DateTime( '', $time_zone );
 
-			if ( ! empty( $timestamp ) ) {
-				$timestamp = (int) $timestamp;
-				if ( 0 !== $timestamp ) {
-					$datetime->setTimestamp( $timestamp );
+				if ( ! empty( $timestamp ) ) {
+					$timestamp = (int) $timestamp;
+					if ( 0 !== $timestamp ) {
+						$datetime->setTimestamp( $timestamp );
+					}
 				}
-			}
 
-			$datetime->setTime( 0, 0, 0 );
+				$datetime->setTime( 0, 0, 0 );
+			} catch ( Exception $e ) {
+				$datetime = null;
+
+				tribe( 'logger' )->log_debug( 'PHP DateTimeZone or DateTime did not operate successfully.', 'tribe-ext-custom-datepicker-start-date' );
+			}
 
 			return $datetime;
 		}
@@ -296,10 +302,20 @@ if (
 			}
 
 			$existing_start_date_datetime = $this->get_midnight_datetime( $post_id, $existing_start_date );
-			$existing_start_date          = $existing_start_date_datetime->getTimestamp();
+
+			if ( null !== $existing_start_date_datetime ) {
+				$existing_start_date = $existing_start_date_datetime->getTimestamp();
+			}
 
 			$today_datetime = $this->get_midnight_datetime( $post_id );
-			$today          = $today_datetime->getTimestamp();
+
+			if ( null !== $today_datetime ) {
+				// what we want and expect to happen
+				$today = $today_datetime->getTimestamp();
+			} else {
+				// not what we want but let's at least avoid causing errors
+				$today = current_time( 'timestamp' );
+			}
 
 			if (
 				is_int( $existing_start_date )
@@ -345,9 +361,9 @@ if (
 
 			$interval = strtoupper( $interval ); // e.g. 'P7d' would be a fatal error
 
-			if ( empty( $interval ) ) {
-				$min_date = $start_date; // minDate must be set but maxDate does not have to be
-			} else {
+			$min_date = $start_date; // minDate must be set but maxDate does not have to be
+
+			if ( ! empty( $interval ) ) {
 				$today_datetime->sub( new DateInterval( $interval ) );
 				$today_datetime->setTime( 0, 0, 0 );
 				$min_date = $today_datetime->getTimestamp();
@@ -405,19 +421,22 @@ if (
 
 			$interval = strtoupper( $interval ); // e.g. 'P1m' would be a fatal error
 
-			if ( empty( $interval ) ) {
-				$max_date = '';
-			} else {
-				$today = $this->get_midnight_datetime();
-				$today->add( new DateInterval( $interval ) );
-				$today->setTime( 0, 0, 0 );
-				$max_date = $today->getTimestamp();
+			$max_date = '';
 
-				if (
-					$this->timestamp_max_today_or_existing
-					&& $max_date < $this->timestamp_max_today_or_existing
-				) {
-					$max_date = $this->timestamp_max_today_or_existing;
+			if ( ! empty( $interval ) ) {
+				$today = $this->get_midnight_datetime();
+
+				if ( null !== $today ) {
+					$today->add( new DateInterval( $interval ) );
+					$today->setTime( 0, 0, 0 );
+					$max_date = $today->getTimestamp();
+
+					if (
+						$this->timestamp_max_today_or_existing
+						&& $max_date < $this->timestamp_max_today_or_existing
+					) {
+						$max_date = $this->timestamp_max_today_or_existing;
+					}
 				}
 			}
 
