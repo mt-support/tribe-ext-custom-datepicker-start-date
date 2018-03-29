@@ -132,9 +132,9 @@ if (
 
 			// Requires PHP 5.3+ to use DateTime::setTimestamp() and the DateInterval class.
 			if ( version_compare( PHP_VERSION, '5.3', '<' ) ) {
-				$message = '<p>' . $this->get_name();
+				$message = '<p>';
 
-				$message .= __( ' requires PHP 5.3 or newer to work. Please contact your website host and inquire about updating PHP.', 'tribe-ext-custom-datepicker-start-date' );
+				$message .= __( sprintf( '%s requires PHP 5.3 or newer to work. Please contact your website host and inquire about updating PHP.', $this->get_name() ), 'tribe-ext-custom-datepicker-start-date' );
 
 				$message .= sprintf( ' <a href="%1$s">%1$s</a>', 'https://wordpress.org/about/requirements/' );
 
