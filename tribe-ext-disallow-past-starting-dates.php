@@ -41,8 +41,8 @@
 
 // Do not load unless Tribe Common is fully loaded and our class does not yet exist.
 if (
-        class_exists( 'Tribe__Extension' )
-        && ! class_exists( 'Tribe__Extension__Custom_Datepicker_Start_Date' )
+		class_exists( 'Tribe__Extension' )
+		&& ! class_exists( 'Tribe__Extension__Custom_Datepicker_Start_Date' )
 ) {
 	/**
 	 * Extension main class, class begins loading on init() function.
@@ -110,7 +110,7 @@ if (
 			 *
 			 * @return string
 			 */
-			return (string) apply_filters( 'tribe_ext_start_datepicker_cap_allowed_any_start_date', 'xmanage_options' );
+			return (string) apply_filters( 'tribe_ext_start_datepicker_cap_allowed_any_start_date', 'manage_options' );
 
 		}
 
