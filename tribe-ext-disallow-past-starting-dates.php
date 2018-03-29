@@ -41,8 +41,8 @@
 
 // Do not load unless Tribe Common is fully loaded and our class does not yet exist.
 if (
-		class_exists( 'Tribe__Extension' )
-		&& ! class_exists( 'Tribe__Extension__Custom_Datepicker_Start_Date' )
+	class_exists( 'Tribe__Extension' )
+	&& ! class_exists( 'Tribe__Extension__Custom_Datepicker_Start_Date' )
 ) {
 	/**
 	 * Extension main class, class begins loading on init() function.
@@ -167,12 +167,12 @@ if (
 			 * .tribe-community-events .tribe-community-notice.tribe-community-notice-error
 			 */
 			?>
-			<style id="<?php echo $this->handle; ?>">
-				.<?php echo $this->get_error_css_class(); ?> {
-					border-color: #dc3232 !important;
-					box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
-				}
-			</style>
+            <style id="<?php echo $this->handle; ?>">
+                .<?php echo $this->get_error_css_class(); ?> {
+                    border-color: #dc3232 !important;
+                    box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
+                }
+            </style>
 			<?php
 		}
 
