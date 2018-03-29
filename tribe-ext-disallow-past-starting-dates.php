@@ -167,12 +167,12 @@ if (
 			 * .tribe-community-events .tribe-community-notice.tribe-community-notice-error
 			 */
 			?>
-            <style id="<?php echo $this->handle; ?>">
-                .<?php echo $this->get_error_css_class(); ?> {
-                    border-color: #dc3232 !important;
-                    box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
-                }
-            </style>
+			<style id="<?php echo $this->handle; ?>">
+				.<?php echo $this->get_error_css_class(); ?> {
+					border-color: #dc3232 !important;
+					box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
+				}
+			</style>
 			<?php
 		}
 
