@@ -40,7 +40,10 @@
  */
 
 // Do not load unless Tribe Common is fully loaded and our class does not yet exist.
-if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Custom_Datepicker_Start_Date' ) ) {
+if (
+        class_exists( 'Tribe__Extension' )
+        && ! class_exists( 'Tribe__Extension__Custom_Datepicker_Start_Date' )
+) {
 	/**
 	 * Extension main class, class begins loading on init() function.
 	 */
@@ -85,23 +88,12 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 		private $timestamp_max_today_or_existing = null;
 
 		/**
-		 * The script's handle with underscores instead of hyphens.
-		 *
-		 * Used for building filter and action hook names and CSS class name.
-		 *
-		 * @return string
-		 */
-		public function get_handle_underscores() {
-			return str_replace( '-', '_', $this->handle );
-		}
-
-		/**
 		 * The input's CSS error class.
 		 *
 		 * @return string
 		 */
 		private function get_error_css_class() {
-			return $this->get_handle_underscores() . '_error';
+			return $this->handle . '-error';
 		}
 
 		/**
@@ -118,7 +110,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 *
 			 * @return string
 			 */
-			return (string) apply_filters( $this->get_handle_underscores() . '_cap_allowed_any_start_date', 'manage_options' );
+			return (string) apply_filters( 'tribe_ext_start_datepicker_cap_allowed_any_start_date', 'xmanage_options' );
 
 		}
 
@@ -175,7 +167,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 * .tribe-community-events .tribe-community-notice.tribe-community-notice-error
 			 */
 			?>
-			<style id="<?php echo $this->get_handle_underscores(); ?>">
+			<style id="<?php echo $this->handle; ?>">
 				.<?php echo $this->get_error_css_class(); ?> {
 					border-color: #dc3232 !important;
 					box-shadow: 0 0 2px rgba(204, 0, 0, 0.8) !important;
@@ -244,7 +236,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 *
 			 * @return string
 			 */
-			$time_zone = (string) apply_filters( $this->get_handle_underscores() . '_time_zone', $time_zone, $post_id );
+			$time_zone = (string) apply_filters( 'tribe_ext_start_datepicker_time_zone', $time_zone, $post_id );
 
 			if ( ! in_array( $time_zone, timezone_identifiers_list() ) ) {
 				// This will fallback to UTC but may also return a TZ environment variable (e.g. EST), which could cause an error for DateTimeZone().
@@ -349,7 +341,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 *
 			 * @return string
 			 */
-			$interval = (string) apply_filters( $this->get_handle_underscores() . '_min_date_interval', '', $this->timestamp_existing_start_date, $post_id );
+			$interval = (string) apply_filters( 'tribe_ext_start_datepicker_min_date_interval', '', $this->timestamp_existing_start_date, $post_id );
 
 			$interval = strtoupper( $interval ); // e.g. 'P7d' would be a fatal error
 
@@ -409,7 +401,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 *
 			 * @return string
 			 */
-			$interval = (string) apply_filters( $this->get_handle_underscores() . '_max_date_interval', '', $this->timestamp_existing_start_date, $post_id );
+			$interval = (string) apply_filters( 'tribe_ext_start_datepicker_max_date_interval', '', $this->timestamp_existing_start_date, $post_id );
 
 			$interval = strtoupper( $interval ); // e.g. 'P1m' would be a fatal error
 
@@ -464,7 +456,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 *
 			 * @return bool
 			 */
-			$load_script = (bool) apply_filters( $this->get_handle_underscores() . '_load_script_wp_admin', $load_script, $current_screen, $post );
+			$load_script = (bool) apply_filters( 'tribe_ext_start_datepicker_load_script_wp_admin', $load_script, $current_screen, $post );
 
 			if ( $load_script ) {
 				wp_enqueue_script( $this->handle );
@@ -502,7 +494,7 @@ if ( class_exists( 'Tribe__Extension' ) && ! class_exists( 'Tribe__Extension__Cu
 			 *
 			 * @return bool
 			 */
-			$load_script = (bool) apply_filters( $this->get_handle_underscores() . '_load_script_ce_form', $load_script, $post_id );
+			$load_script = (bool) apply_filters( 'tribe_ext_start_datepicker_load_script_ce_form', $load_script, $post_id );
 
 			if ( $load_script ) {
 				wp_enqueue_script( $this->handle );
