@@ -41,6 +41,6 @@ We're always interested in your feedback and our [premium forums](https://theeve
 
 == Changelog ==
 
-= 1.0.0 2018-03-29 =
+= 1.0.0 2018-03-30 =
 
 * Initial release
