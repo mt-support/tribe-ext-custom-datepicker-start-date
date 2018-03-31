@@ -121,6 +121,7 @@ if (
 		public function construct() {
 			$this->add_required_plugin( 'Tribe__Events__Main' );
 			$this->set_url( 'https://theeventscalendar.com/extensions/custom-datepicker-start-date/' );
+			$this->set_version( '1.0.1' );
 		}
 
 		/**
