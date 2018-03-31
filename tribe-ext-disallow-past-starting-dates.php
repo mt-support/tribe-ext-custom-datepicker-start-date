@@ -132,6 +132,7 @@ if (
 			load_plugin_textdomain( $this->handle, false, basename( dirname( __FILE__ ) ) . '/languages/' );
 
 			// Requires PHP 5.3+ to use DateTime::setTimestamp() and the DateInterval class.
+			$php_required_version = '5.3';
 			if ( version_compare( PHP_VERSION, $php_required_version, '<' ) ) {
 				if (
 					is_admin()
