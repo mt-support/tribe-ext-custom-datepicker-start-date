@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       The Events Calendar Extension: Custom Datepicker Start Date
  * Description:       Restrict the event start date for non-Administrator users. Disallows setting a start date in the past by default. Filters exist for customizing to something else and for setting a maximum future start date. Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Extension Class:   Tribe__Extension__Custom_Datepicker_Start_Date
  * GitHub Plugin URI: https://github.com/mt-support/tribe-ext-custom-datepicker-start-date
  * Author:            Modern Tribe, Inc.
@@ -131,16 +131,21 @@ if (
 			load_plugin_textdomain( $this->handle, false, basename( dirname( __FILE__ ) ) . '/languages/' );
 
 			// Requires PHP 5.3+ to use DateTime::setTimestamp() and the DateInterval class.
-			if ( version_compare( PHP_VERSION, '5.3', '<' ) ) {
-				$message = '<p>';
+			if ( version_compare( PHP_VERSION, $php_required_version, '<' ) ) {
+				if (
+					is_admin()
+					&& current_user_can( 'activate_plugins' )
+				) {
+					$message = '<p>';
 
-				$message .= __( sprintf( '%s requires PHP 5.3 or newer to work. Please contact your website host and inquire about updating PHP.', $this->get_name() ), 'tribe-ext-custom-datepicker-start-date' );
+					$message .= sprintf( __( '%s requires PHP version %s or newer to work. Please contact your website host and inquire about updating PHP.', 'tribe-ext-custom-datepicker-start-date' ), $this->get_name(), $php_required_version );
 
-				$message .= sprintf( ' <a href="%1$s">%1$s</a>', 'https://wordpress.org/about/requirements/' );
+					$message .= sprintf( ' <a href="%1$s">%1$s</a>', 'https://wordpress.org/about/requirements/' );
 
-				$message .= '</p>';
+					$message .= '</p>';
 
-				tribe_notice( $this->get_name(), $message, 'type=error' );
+					tribe_notice( $this->get_name(), $message, 'type=error' );
+				}
 
 				return;
 			}
