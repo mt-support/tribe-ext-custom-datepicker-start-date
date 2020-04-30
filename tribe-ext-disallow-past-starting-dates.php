@@ -42,9 +42,16 @@
 
 namespace Tribe\Extensions\Custom_Datepicker_Start_Date;
 
-use Tribe__Autoloader;
-use Tribe__Dependency;
+use DateInterval;
+use DateTimeImmutable;
+use DateTimeZone;
+use Exception;
+use Tribe__Admin__Helpers;
+use Tribe__Events__Main;
+use Tribe__Events__Timezones;
 use Tribe__Extension;
+use WP_Post;
+use WP_Screen;
 
 // Do not load unless Tribe Common is fully loaded and our class does not yet exist.
 if (
@@ -56,7 +63,7 @@ if (
 	 */
 	class Main extends Tribe__Extension {
 		/**
-		 * The script's handle.
+		 * The script's handle (also the text domain).
 		 */
 		public $handle = 'tribe-ext-custom-datepicker-start-date';
 
@@ -67,7 +74,7 @@ if (
 		 *
 		 * @var array
 		 */
-		private $script_vars = array();
+		private $script_vars = [];
 
 		/**
 		 * The existing start date's midnight timestamp.
@@ -140,16 +147,16 @@ if (
 				return;
 			}
 
-			add_action( 'init', array( $this, 'register_assets' ) );
+			add_action( 'init', [ $this, 'register_assets' ] );
 
-			add_action( 'admin_enqueue_scripts', array( $this, 'load_assets_for_event_admin_edit_screen' ) );
+			add_action( 'admin_enqueue_scripts', [ $this, 'load_assets_for_event_admin_edit_screen' ] );
 
 			// This action hook exists as of Community Events version 4.4
-			add_action( 'tribe_community_events_enqueue_resources', array( $this, 'load_assets_for_ce_form' ) );
+			add_action( 'tribe_community_events_enqueue_resources', [ $this, 'load_assets_for_ce_form' ] );
 
 			// Add the error class' <style> to the <head>.
-			add_action( 'wp_head', array( $this, 'validation_style' ) );
-			add_action( 'admin_head', array( $this, 'validation_style' ) );
+			add_action( 'wp_head', [ $this, 'validation_style' ] );
+			add_action( 'admin_head', [ $this, 'validation_style' ] );
 		}
 
 		/**
@@ -219,10 +226,10 @@ if (
 
 			// `tribe-events-admin` dependency so the `tribe_datepicker_opts` JS variable is set by the time we need to extend it
 			// which comes from /wp-content/plugins/the-events-calendar/src/resources/js/events-admin.js
-			wp_register_script( $this->handle, $js, array(
+			wp_register_script( $this->handle, $js, [
 				'jquery',
 				'tribe-events-admin'
-			), $this->get_version(), true );
+			], $this->get_version(), true );
 		}
 
 		/**
@@ -280,7 +287,7 @@ if (
 		}
 
 		/**
-		 * Get the PHP DateTime object of "today at midnight" (the first second
+		 * Get the PHP DateTimeImmutable object of "today at midnight" (the first second
 		 * of today) or midnight of a given timestamp.
 		 *
 		 * Because the datepicker is separate from the timepicker, we need to
@@ -290,7 +297,7 @@ if (
 		 * @param int $post_id
 		 * @param bool|int $timestamp
 		 *
-		 * @return DateTime
+		 * @return DateTimeImmutable
 		 */
 		private function get_midnight_datetime( $post_id = 0, $timestamp = false ) {
 			$tz_string = $this->get_time_zone_string( $post_id );
@@ -298,7 +305,7 @@ if (
 			try {
 				$time_zone = new DateTimeZone( $tz_string );
 
-				$datetime = new DateTime( '', $time_zone );
+				$datetime = new DateTimeImmutable( '', $time_zone );
 
 				if ( ! empty( $timestamp ) ) {
 					$timestamp = (int) $timestamp;
@@ -311,7 +318,7 @@ if (
 			} catch ( Exception $e ) {
 				$datetime = null;
 
-				tribe( 'logger' )->log_debug( 'PHP DateTimeZone or DateTime did not operate successfully.', $this->handle );
+				tribe( 'logger' )->log_debug( 'PHP DateTimeZone or DateTimeImmutable did not operate successfully.', $this->handle );
 			}
 
 			return $datetime;
@@ -450,7 +457,12 @@ if (
 			 *
 			 * @return string
 			 */
-			$interval = (string) apply_filters( 'tribe_ext_start_datepicker_max_date_interval', '', $this->timestamp_existing_start_date, $post_id );
+			$interval = (string) apply_filters(
+				'tribe_ext_start_datepicker_max_date_interval',
+				'',
+				$this->timestamp_existing_start_date,
+				$post_id
+			);
 
 			$interval = strtoupper( $interval ); // e.g. 'P1m' would be a fatal error
 
