@@ -1,10 +1,11 @@
 <?php
 /**
  * Plugin Name:       The Events Calendar Extension: Custom Datepicker Start Date
- * Description:       Restrict the event start date for non-Administrator users. Disallows setting a start date in the past by default. Filters exist for customizing to something else and for setting a maximum future start date. Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
- * Version:           1.0.1
- * Extension Class:   Tribe__Extension__Custom_Datepicker_Start_Date
+ * Plugin URI:        https://theeventscalendar.com/extensions/custom-datepicker-start-date/
  * GitHub Plugin URI: https://github.com/mt-support/tribe-ext-custom-datepicker-start-date
+ * Description:       Restrict the event start date for non-Administrator users. Disallows setting a start date in the past by default. Filters exist for customizing to something else and for setting a maximum future start date. Works for new and existing events on the wp-admin event add/edit screen and, if applicable, the Community Events add/edit event form.
+ * Version:           1.1.0
+ * Extension Class:   Tribe\Extensions\Custom_Datepicker_Start_Date\Main
  * Author:            Modern Tribe, Inc.
  * Author URI:        http://m.tri.be/1971
  * License:           GPL version 3 or any later version
@@ -39,15 +40,21 @@
  * in PHP.
  */
 
+namespace Tribe\Extensions\Custom_Datepicker_Start_Date;
+
+use Tribe__Autoloader;
+use Tribe__Dependency;
+use Tribe__Extension;
+
 // Do not load unless Tribe Common is fully loaded and our class does not yet exist.
 if (
 	class_exists( 'Tribe__Extension' )
-	&& ! class_exists( 'Tribe__Extension__Custom_Datepicker_Start_Date' )
+	&& ! class_exists( Main::class )
 ) {
 	/**
 	 * Extension main class, class begins loading on init() function.
 	 */
-	class Tribe__Extension__Custom_Datepicker_Start_Date extends Tribe__Extension {
+	class Main extends Tribe__Extension {
 		/**
 		 * The script's handle.
 		 */
@@ -120,8 +127,6 @@ if (
 		 */
 		public function construct() {
 			$this->add_required_plugin( 'Tribe__Events__Main' );
-			$this->set_url( 'https://theeventscalendar.com/extensions/custom-datepicker-start-date/' );
-			$this->set_version( '1.0.1' );
 		}
 
 		/**
@@ -131,24 +136,7 @@ if (
 			// Load plugin textdomain
 			load_plugin_textdomain( $this->handle, false, basename( dirname( __FILE__ ) ) . '/languages/' );
 
-			// Requires PHP 5.3+ to use DateTime::setTimestamp() and the DateInterval class.
-			$php_required_version = '5.3';
-			if ( version_compare( PHP_VERSION, $php_required_version, '<' ) ) {
-				if (
-					is_admin()
-					&& current_user_can( 'activate_plugins' )
-				) {
-					$message = '<p>';
-
-					$message .= sprintf( __( '%s requires PHP version %s or newer to work. Please contact your website host and inquire about updating PHP.', 'tribe-ext-custom-datepicker-start-date' ), $this->get_name(), $php_required_version );
-
-					$message .= sprintf( ' <a href="%1$s">%1$s</a>', 'https://wordpress.org/about/requirements/' );
-
-					$message .= '</p>';
-
-					tribe_notice( $this->get_name(), $message, 'type=error' );
-				}
-
+			if ( ! $this->php_version_check() ) {
 				return;
 			}
 
@@ -162,6 +150,44 @@ if (
 			// Add the error class' <style> to the <head>.
 			add_action( 'wp_head', array( $this, 'validation_style' ) );
 			add_action( 'admin_head', array( $this, 'validation_style' ) );
+		}
+
+		/**
+		 * Check if we have a sufficient version of PHP. Admin notice if we don't and user should see it.
+		 *
+		 * @link https://theeventscalendar.com/knowledgebase/php-version-requirement-changes/ All extensions require PHP 5.6+.
+		 *
+		 * @return bool
+		 */
+		private function php_version_check() {
+			$php_required_version = '5.6';
+
+			if ( version_compare( PHP_VERSION, $php_required_version, '<' ) ) {
+				if (
+					is_admin()
+					&& current_user_can( 'activate_plugins' )
+				) {
+					$message = '<p>';
+
+					$message .= sprintf(
+						__( '%s requires PHP version %s or newer to work. Please contact your website host and inquire about updating PHP.',
+							$this->handle
+						),
+						$this->get_name(),
+						$php_required_version
+					);
+
+					$message .= sprintf( ' <a href="%1$s">%1$s</a>', 'https://wordpress.org/about/requirements/' );
+
+					$message .= '</p>';
+
+					tribe_notice( $this->handle . '-php-version', $message, [ 'type' => 'error' ] );
+				}
+
+				return false;
+			}
+
+			return true;
 		}
 
 		/**
@@ -285,7 +311,7 @@ if (
 			} catch ( Exception $e ) {
 				$datetime = null;
 
-				tribe( 'logger' )->log_debug( 'PHP DateTimeZone or DateTime did not operate successfully.', 'tribe-ext-custom-datepicker-start-date' );
+				tribe( 'logger' )->log_debug( 'PHP DateTimeZone or DateTime did not operate successfully.', $this->handle );
 			}
 
 			return $datetime;
