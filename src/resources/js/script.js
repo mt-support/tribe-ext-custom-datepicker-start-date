@@ -2,13 +2,13 @@ jQuery( document ).ready( function ( $ ) {
 	// JS uses milliseconds; PHP does not
 
 	// min_date will never be empty string (unless incorrectly filtered in PHP)
-	var min_date = new Date( php_vars.min_date * 1000 );
+	var min_date = new Date( tribe_ext_start_datepicker__vars.min_date * 1000 );
 
 	// max_date will always be set but may be zero
 	// empty string * 1000 is zero
 	// non-empty string * 1000 is NaN
 	// else we assume it is a PHP timestamp, which needs to convert to milliseconds
-	var max_date = php_vars.max_date * 1000;
+	var max_date = tribe_ext_start_datepicker__vars.max_date * 1000;
 	if (
 		0 === max_date ||
 		isNaN( max_date ) ||
@@ -39,9 +39,9 @@ jQuery( document ).ready( function ( $ ) {
 			) {
 				// If the user submits with a blank start date, the event will be saved with a start date of Today.
 				$( this ).datepicker( 'setDate', '' );
-				$( this ).addClass( php_vars.error_class );
+				$( this ).addClass( tribe_ext_start_datepicker__vars.error_class );
 			} else {
-				$( this ).removeClass( php_vars.error_class );
+				$( this ).removeClass( tribe_ext_start_datepicker__vars.error_class );
 			}
 		} );
 } );

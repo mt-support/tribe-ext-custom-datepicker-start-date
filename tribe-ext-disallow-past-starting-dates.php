@@ -47,6 +47,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 use Tribe__Admin__Helpers;
+use Tribe__Date_Utils;
 use Tribe__Events__Main;
 use Tribe__Events__Timezones;
 use Tribe__Extension;
@@ -527,7 +528,7 @@ if (
 
 				// Pass the PHP to the JS.
 				$this->build_script_vars( $post->ID );
-				wp_localize_script( $this->handle, 'php_vars', $this->script_vars );
+				wp_localize_script( $this->handle, 'tribe_ext_start_datepicker__vars', $this->script_vars );
 			}
 		}
 
@@ -565,7 +566,7 @@ if (
 
 				// Pass the PHP to the JS.
 				$this->build_script_vars( $post_id );
-				wp_localize_script( $this->handle, 'php_vars', $this->script_vars );
+				wp_localize_script( $this->handle, 'tribe_ext_start_datepicker__vars', $this->script_vars );
 			}
 		}
 
