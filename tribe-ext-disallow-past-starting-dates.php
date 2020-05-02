@@ -83,7 +83,7 @@ if (
 		 * This will remain NULL if this is a new (non-existing) event or if its
 		 * start date is TODAY.
 		 *
-		 * @see Tribe__Extension__Custom_Datepicker_Start_Date::get_min_date()
+		 * @see get_min_date()
 		 *
 		 * @var null|int
 		 */
@@ -96,7 +96,7 @@ if (
 		 * This will remain NULL if this is a new (non-existing) event or if its
 		 * start date is TODAY.
 		 *
-		 * @see Tribe__Extension__Custom_Datepicker_Start_Date::get_min_date()
+		 * @see get_min_date()
 		 *
 		 * @var null|int
 		 */

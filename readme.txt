@@ -43,7 +43,8 @@ We're always interested in your feedback and our [premium forums](https://theeve
 
 = 1.1.0 2020-05-01 =
 
-* Updated to work with The Events Calendar's New (V2) Views.
+* Updated to work with The Events Calendar's Block Editor date picker, even for Legacy (V1) Views.
+* Confirmed still works with The Events Calendar's New (V2) Views.
 * Requires PHP 5.6+ instead of 5.3+.
 
 = 1.0.1 2018-03-31 =
