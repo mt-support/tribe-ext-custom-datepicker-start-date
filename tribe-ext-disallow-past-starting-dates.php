@@ -150,7 +150,8 @@ if (
 
 			add_action( 'init', [ $this, 'register_assets' ] );
 
-			add_action( 'admin_enqueue_scripts', [ $this, 'load_assets_for_event_admin_edit_screen' ] );
+			add_action( 'admin_enqueue_scripts', [ $this, 'load_for_classic_editor_admin' ] );
+			add_action( 'enqueue_block_editor_assets', [ $this, 'load_for_block_editor' ] );
 
 			// This action hook exists as of Community Events version 4.4
 			add_action( 'tribe_community_events_enqueue_resources', [ $this, 'load_assets_for_ce_form' ] );
@@ -178,7 +179,8 @@ if (
 					$message = '<p>';
 
 					$message .= sprintf(
-						__( '%s requires PHP version %s or newer to work. Please contact your website host and inquire about updating PHP.',
+						__(
+							'%s requires PHP version %s or newer to work. Please contact your website host and inquire about updating PHP.',
 							$this->handle
 						),
 						$this->get_name(),
@@ -223,14 +225,33 @@ if (
 		public function register_assets() {
 			$resources_url = trailingslashit( plugin_dir_url( __FILE__ ) ) . 'src/resources/';
 
-			$js = $resources_url . 'js/script.js';
-
+			// For the wp-admin Classic editor and Community Events form.
 			// `tribe-events-admin` dependency so the `tribe_datepicker_opts` JS variable is set by the time we need to extend it
 			// which comes from /wp-content/plugins/the-events-calendar/src/resources/js/events-admin.js
-			wp_register_script( $this->handle, $js, [
-				'jquery',
-				'tribe-events-admin'
-			], $this->get_version(), true );
+			wp_register_script(
+				$this->handle . '-classic',
+				$resources_url . 'js/classic.js',
+				[
+					'jquery',
+					'tribe-events-admin',
+				],
+				$this->get_version(),
+				true
+			);
+
+			// For the wp-admin block editor.
+			wp_register_script(
+				$this->handle . '-block',
+				$resources_url . 'js/block.js',
+				[
+					'tribe-the-events-calendar-blocks',
+					'wp-blocks',
+					'wp-dom-ready',
+					'wp-edit-post',
+				],
+				$this->get_version(),
+				true
+			);
 		}
 
 		/**
@@ -273,7 +294,7 @@ if (
 			 * Override the time zone used for date calculations.
 			 *
 			 * @param string $time_zone A named time zone (not manual UTC offset).
-			 * @param int $post_id The Post ID.
+			 * @param int    $post_id   The Post ID.
 			 *
 			 * @return string
 			 */
@@ -295,7 +316,7 @@ if (
 		 * make sure we are using midnight whenever setting the script's minDate
 		 * or maxDate.
 		 *
-		 * @param int $post_id
+		 * @param int      $post_id
 		 * @param bool|int $timestamp
 		 *
 		 * @return DateTimeImmutable
@@ -316,7 +337,8 @@ if (
 				}
 
 				$datetime->setTime( 0, 0, 0 );
-			} catch ( Exception $e ) {
+			}
+			catch ( Exception $e ) {
 				$datetime = null;
 
 				tribe( 'logger' )->log_debug( 'PHP DateTimeZone or DateTimeImmutable did not operate successfully.', $this->handle );
@@ -387,14 +409,14 @@ if (
 			 *
 			 * @link https://secure.php.net/manual/class.dateinterval.php
 			 *
-			 * @param string $date_interval This must be a string acceptable to
-			 *                              PHP's DateInterval class, including
-			 *                              the leading 'P'.
+			 * @param string   $date_interval This             must be a string acceptable to
+			 *                                                 PHP's DateInterval class, including
+			 *                                                 the leading 'P'.
 			 * @param null|int $existing_event_start_timestamp Timestamp of
-			 *                              midnight of the start date of an
-			 *                              existing event. Null if not an existing
-			 *                              event or if its start date is today.
-			 * @param int $post_id The Post ID.
+			 *                                                 midnight of the start date of an
+			 *                                                 existing event. Null if not an existing
+			 *                                                 event or if its start date is today.
+			 * @param int      $post_id                        The Post ID.
 			 *
 			 * @return string
 			 */
@@ -447,14 +469,14 @@ if (
 			 *
 			 * @link https://secure.php.net/manual/class.dateinterval.php
 			 *
-			 * @param string $date_interval This must be a string acceptable to
-			 *                              PHP's DateInterval class, including
-			 *                              the leading 'P'.
+			 * @param string   $date_interval This             must be a string acceptable to
+			 *                                                 PHP's DateInterval class, including
+			 *                                                 the leading 'P'.
 			 * @param null|int $existing_event_start_timestamp Timestamp of
-			 *                              midnight of the start date of an
-			 *                              existing event. Null if not an existing
-			 *                              event or if its start date is today.
-			 * @param int $post_id The Post ID.
+			 *                                                 midnight of the start date of an
+			 *                                                 existing event. Null if not an existing
+			 *                                                 event or if its start date is today.
+			 * @param int      $post_id                        The Post ID.
 			 *
 			 * @return string
 			 */
@@ -492,7 +514,7 @@ if (
 		/**
 		 * Load this extension's script on the wp-admin event add/edit screen.
 		 */
-		public function load_assets_for_event_admin_edit_screen() {
+		public function load_for_classic_editor_admin() {
 			// bail if not on the wp-admin event add/edit screen
 			global $current_screen;
 			global $post;
@@ -510,30 +532,65 @@ if (
 			}
 
 			/**
-			 * Whether or not the script should load in wp-admin.
+			 * Whether the script should load in wp-admin's Classic Editor.
 			 *
 			 * Useful to override for specific users or other scenarios. For
 			 * example: allow selecting any start date for a specific Post ID.
 			 *
-			 * @param bool $load_script Whether or not to load the script.
+			 * @param bool      $load_script    Whether to load the script.
 			 * @param WP_Screen $current_screen The wp-admin global $current_screen.
-			 * @param WP_Post $post The WP_Post object.
+			 * @param WP_Post   $post           The WP_Post object.
 			 *
 			 * @return bool
 			 */
-			$load_script = (bool) apply_filters( 'tribe_ext_start_datepicker_load_script_wp_admin', $load_script, $current_screen, $post );
+			$load_script = (bool) apply_filters( $this->handle . '-classic-admin-load', $load_script, $current_screen, $post );
 
 			if ( $load_script ) {
-				wp_enqueue_script( $this->handle );
+				wp_enqueue_script( $this->handle . '-classic' );
 
 				// Pass the PHP to the JS.
 				$this->build_script_vars( $post->ID );
-				wp_localize_script( $this->handle, 'tribe_ext_start_datepicker__vars', $this->script_vars );
+				wp_localize_script( $this->handle . '-classic', 'tribe_ext_start_datepicker__vars', $this->script_vars );
+			}
+		}
+
+		/**
+		 * Load this extension's script on the TEC's Block Editor.
+		 *
+		 * Don't need all the screen-checking logic because of the action we enqueue on plus the script's dependency.
+		 */
+		public function load_for_block_editor() {
+			// bail if not on the wp-admin event add/edit screen
+			global $current_screen;
+			global $post;
+
+			/**
+			 * Whether the script should load in the Block Editor.
+			 *
+			 * Useful to override for specific users or other scenarios. For
+			 * example: allow selecting any start date for a specific Post ID.
+			 *
+			 * @param bool      $load_script    Whether to load the script.
+			 * @param WP_Screen $current_screen The wp-admin global $current_screen.
+			 * @param WP_Post   $post           The WP_Post object.
+			 *
+			 * @return bool
+			 */
+			$load_script = (bool) apply_filters( $this->handle . '-block-load', true, $current_screen, $post );
+
+			if ( $load_script ) {
+				wp_enqueue_script( $this->handle . '-block' );
+
+				// Pass the PHP to the JS.
+				$this->build_script_vars( $post->ID );
+				wp_localize_script( $this->handle . '-block', 'tribe_ext_start_datepicker__vars', $this->script_vars );
 			}
 		}
 
 		/**
 		 * Load this extension's script on Community Events' event add/edit form.
+		 *
+		 * Only uses the Classic Editor script, as CE doesn't support the Block Editor.
 		 */
 		public function load_assets_for_ce_form() {
 			global $tribe_community_event_id;
@@ -555,18 +612,18 @@ if (
 			 * example: allow selecting any start date for a specific Post ID.
 			 *
 			 * @param bool $load_script Whether or not to load the script.
-			 * @param int $post_id The Post ID.
+			 * @param int  $post_id     The Post ID.
 			 *
 			 * @return bool
 			 */
-			$load_script = (bool) apply_filters( 'tribe_ext_start_datepicker_load_script_ce_form', $load_script, $post_id );
+			$load_script = (bool) apply_filters( $this->handle . '-community-load', $load_script, $post_id );
 
 			if ( $load_script ) {
-				wp_enqueue_script( $this->handle );
+				wp_enqueue_script( $this->handle . '-classic' );
 
 				// Pass the PHP to the JS.
 				$this->build_script_vars( $post_id );
-				wp_localize_script( $this->handle, 'tribe_ext_start_datepicker__vars', $this->script_vars );
+				wp_localize_script( $this->handle . '-classic', 'tribe_ext_start_datepicker__vars', $this->script_vars );
 			}
 		}
 
