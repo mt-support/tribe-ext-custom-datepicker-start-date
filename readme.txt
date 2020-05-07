@@ -41,11 +41,10 @@ We're always interested in your feedback and our [premium forums](https://theeve
 
 == Changelog ==
 
-= 1.1.0 2020-05-01 =
+= 1.1.0 2020-05-XX =
 
 * Requires WordPress 5.0.0+ and The Events Calendar v5.1.1+.
-* Updated to work with The Events Calendar's Block Editor date picker, even for Legacy (V1) Views.
-* Confirmed still works with The Events Calendar's New (V2) Views.
+* Updated to work with The Events Calendar's Block Editor and Classic Editor date pickers, as well as Community Events'.
 * Requires PHP 5.6+ instead of 5.3+.
 
 = 1.0.1 2018-03-31 =
