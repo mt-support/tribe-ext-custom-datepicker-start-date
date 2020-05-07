@@ -1,39 +1,64 @@
+"use strict";
+
 wp.domReady( function() {
 	wp.hooks.addFilter(
-		'blocks.eventDatetime.monthModifiersHook',
-		'tribe/tec/monthModifiers',
-		tecExtCustomDatepickerModifiers,
+		'blocks.tribeEventDayPicker.disabledDays',
+		'tribe/ext-custom-datepicker/disabledDays',
+		tecExtCustomDatepickerDisabledDays,
 	);
 } );
 
 // http://react-day-picker.js.org/docs/matching-days
-function tecExtCustomDatepickerModifiers( _, props ) {
-	console.log( 'tecExtCustomDatepickerModifiers' );
-	console.log( _ );
-	console.log( props );
 
-	const min_date = new Date( tribe_ext_start_datepicker__vars.min_date * 1000 );
+/**
+ * Set the disabled days, if not already set.
+ *
+ * @see .../the-events-calendar/src/modules/elements/month/element.js for the component.
+ *
+ * @param {{}|null|*} disabledDays
+ *
+ * @returns {{}|null|*}
+ */
+function tecExtCustomDatepickerDisabledDays( disabledDays ) {
+	// Something else must have already filtered (unexpectedly) so let's bail.
+	if ( null !== disabledDays ) {
+		return disabledDays;
+	}
+
+	const minDate = new Date( tribe_ext_start_datepicker__vars.min_date * 1000 );
 
 	// max_date will always be set but may be zero
 	// empty string * 1000 is zero
 	// non-empty string * 1000 is NaN
 	// else we assume it is a PHP timestamp, which needs to convert to milliseconds
-	let max_date = tribe_ext_start_datepicker__vars.max_date * 1000;
+	let maxDate = tribe_ext_start_datepicker__vars.max_date * 1000;
 
 	if (
-		0 === max_date ||
-		isNaN( max_date ) ||
-		min_date > max_date
+		0 === maxDate ||
+		isNaN( maxDate ) ||
+		minDate > maxDate
 	) {
-		max_date = '';
+		maxDate = null;
 	} else {
-		max_date = new Date( max_date );
+		maxDate = new Date( maxDate );
 	}
 
-	const newProps = {
-		before: min_date,
-		after: max_date,
-	};
+	if (
+		! minDate
+		&& ! maxDate
+	) {
+		return null;
+	}
 
-	return { ...props, ...newProps };
-};
+	let newDisabledDays = {};
+
+	if ( minDate ) {
+		newDisabledDays.before = minDate;
+	}
+
+	if ( maxDate ) {
+		newDisabledDays.after = maxDate;
+	}
+
+	return newDisabledDays;
+}
