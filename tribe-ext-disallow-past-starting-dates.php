@@ -130,11 +130,13 @@ if (
 		}
 
 		/**
-		 * Set the minimum required version of The Events Calendar
-		 * and this extension's URL.
+		 * Set the minimum required version of The Events Calendar.
+		 *
+		 * @since 1.1.0 TEC 5.1.1 is when the block editor Day Picker added disabled days (which is filterable).
 		 */
 		public function construct() {
 			$this->add_required_plugin( 'Tribe__Events__Main' );
+			//$this->add_required_plugin( 'Tribe__Events__Main', '5.1.1' );
 		}
 
 		/**
@@ -151,7 +153,9 @@ if (
 			add_action( 'init', [ $this, 'register_assets' ] );
 
 			add_action( 'admin_enqueue_scripts', [ $this, 'load_for_classic_editor_admin' ] );
-			add_action( 'enqueue_block_editor_assets', [ $this, 'load_for_block_editor' ] );
+
+			// Since WP v5.0.0.
+			add_action( 'enqueue_block_assets', [ $this, 'load_for_block_editor' ] );
 
 			// This action hook exists as of Community Events version 4.4
 			add_action( 'tribe_community_events_enqueue_resources', [ $this, 'load_assets_for_ce_form' ] );
@@ -245,9 +249,8 @@ if (
 				$resources_url . 'js/block.js',
 				[
 					'tribe-the-events-calendar-blocks',
-					'wp-blocks',
 					'wp-dom-ready',
-					'wp-edit-post',
+					'wp-hooks',
 				],
 				$this->get_version(),
 				true
@@ -525,7 +528,7 @@ if (
 				current_user_can( $this->get_cap_allowed_any_date() )
 				|| ! class_exists( 'Tribe__Admin__Helpers' )
 				|| ! Tribe__Admin__Helpers::instance()->is_post_type_screen( Tribe__Events__Main::POSTTYPE )
-				|| empty( $current_screen->base )
+				|| ! $current_screen instanceof WP_Screen
 				|| 'post' !== $current_screen->base // the wp-admin add/edit screen
 			) {
 				$load_script = false;
