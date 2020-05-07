@@ -2,7 +2,7 @@
 Contributors: ModernTribe
 Donate link: http://m.tri.be/29
 Tags: events, calendar
-Requires at least: 4.5
+Requires at least: 5.0.0
 Tested up to: 5.4.1
 Requires PHP: 5.6
 Stable tag: 1.1.0
@@ -43,6 +43,7 @@ We're always interested in your feedback and our [premium forums](https://theeve
 
 = 1.1.0 2020-05-01 =
 
+* Requires WordPress 5.0.0+ and The Events Calendar v5.1.1+.
 * Updated to work with The Events Calendar's Block Editor date picker, even for Legacy (V1) Views.
 * Confirmed still works with The Events Calendar's New (V2) Views.
 * Requires PHP 5.6+ instead of 5.3+.
